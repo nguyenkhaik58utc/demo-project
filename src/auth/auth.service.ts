@@ -2,10 +2,13 @@ import { PrismaService } from './../prisma/prisma.service';
 import { Injectable } from "@nestjs/common";
 import * as argon from 'argon2'
 import { AuthDTO } from './dto';
-import { contains } from 'class-validator';
+import { AxiosResponse } from 'axios';
+import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs';
 @Injectable({})
 export class AuthService{
-    constructor(private prismaService:PrismaService){
+    constructor(private prismaService:PrismaService,
+        private httpService: HttpService){
 
     }
     async register(authDTO: AuthDTO){
@@ -79,6 +82,35 @@ export class AuthService{
         } catch (error) {
             return {
                 data: data,
+                message: error.message
+            }
+        }
+    }
+
+    async callApi() {
+        var products = [];
+        await this.httpService.axiosRef('https://6229acabbe12fc4538a4854c.mockapi.io/api/ShopOnline/Products')
+        .then(data => {
+            products = data.data
+        });
+        return products.map(({ name, Price}) => ({ name, Price}));
+    }
+
+    async addProduct(){
+        try {
+            var result = await this.httpService.post('https://6229acabbe12fc4538a4854c.mockapi.io/api/ShopOnline/Products',{
+                "name": "Test",
+                "Price": "1999"
+              }).pipe(
+                map(data => {return data.data})
+              );
+              return {
+                data: result,
+                message: ""
+            };
+        } catch (error) {
+            return {
+                data: null,
                 message: error.message
             }
         }
